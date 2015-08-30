@@ -39,8 +39,13 @@ void loop()
     _song = "Song: " + Serial.readStringUntil('|');
     _artist = "Artist: " + Serial.readStringUntil('|');
     _album = "Album: " + Serial.readStringUntil('\n');
-    spos = 0;
-    apos = 0;
+
+    glcd.clear();
+    glcd.display();
+    spos = scrollDisplay(0, _song, 0);
+    apos = scrollDisplay(2, _artist, 0);
+    arpos = scrollDisplay(4, _album, 0);
+    lastmillis = millis();
   }else if(msgType == "P"){
     int playing = Serial.parseInt();
     if(playing == 1){
@@ -54,12 +59,6 @@ void loop()
     }
     while(Serial.available()) Serial.read();
   }
-  glcd.clear();
-  glcd.display();
-  spos = scrollDisplay(0, _song, 0);
-  apos = scrollDisplay(2, _artist, 0);
-  arpos = scrollDisplay(4, _album, 0);
-  lastmillis = millis();
  }
  if(lastmillis + SCROLL_SPEED <= millis()){
    spos = scrollDisplay(0, _song, spos);
