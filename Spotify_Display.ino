@@ -3,10 +3,13 @@
 #define R_PIN 3
 #define G_PIN 10
 #define B_PIN 11
+#define SCROLL_SPEED 2500
 
 ST7565 glcd(9, 8, 7, 6, 5);
 
 String _song, _artist = "";
+int spos, apos = 0;
+unsigned long lastmillis;
 
 void setup()   {                
   Serial.begin(9600);
@@ -33,8 +36,10 @@ void loop()
  if(Serial.available()){
   String msgType = Serial.readStringUntil('|');
   if(msgType == "S"){
-    _song = Serial.readStringUntil('|');
-    _artist = Serial.readStringUntil('\n');
+    _song = "Song: " + Serial.readStringUntil('|');
+    _artist = "Artist: " + Serial.readStringUntil('\n');
+    spos = 0;
+    apos = 0;
   }else if(msgType == "P"){
     int playing = Serial.parseInt();
     if(playing == 1){
@@ -48,28 +53,44 @@ void loop()
     }
     while(Serial.available()) Serial.read();
   }
-    
-  updateDisplay(_song, _artist);
- }
-  
-}
-
-void updateDisplay(String song, String artist){
   glcd.clear();
-
-  song = "Song: " + song;
-  artist = "Artist: " + artist;
-  
-  char os[128];
-  char oa[128];
-
-  song.toCharArray(os, 128);
-  artist.toCharArray(oa, 128);
-  
-  glcd.drawstring(0, 0, os);
-  glcd.drawstring(0, 4, oa);
   glcd.display();
+  spos = scrollDisplay(0, _song, 0);
+  apos = scrollDisplay(2, _artist, 0);
+  lastmillis = millis();
+ }
+ if(lastmillis + SCROLL_SPEED <= millis()){
+   spos = scrollDisplay(0, _song, spos);
+   apos = scrollDisplay(2, _artist, apos);
+   lastmillis = millis();
+ }
 }
+
+int scrollDisplay(uint8_t line, String s, int pos){
+  int x = 0;
+  char c[128];
+  s.toCharArray(c, 128);
+
+  int written = 0;
+  int i = pos-1;
+  while (c[i] != 0) {
+    glcd.drawchar(x, line, c[i]);
+    i++;
+    x += 6; // 6 pixels wide
+    if (x + 6 >= LCDWIDTH) {
+      glcd.display();
+      return written+pos; //ran out of space, characters left
+    }
+    written++;
+  }
+ while(x < LCDWIDTH){
+    glcd.drawchar(x, line, ' ');
+    x+= 6;
+  }
+  glcd.display();
+  return 0;
+}
+
 
 // this handy function will return the number of bytes currently free in RAM, great for debugging!   
 int freeRam(void)

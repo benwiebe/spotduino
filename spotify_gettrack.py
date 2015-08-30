@@ -51,6 +51,7 @@ while True:
 
 			print("\n")
 
+			artstring = artstring[:-2]
 			outstring = PREFIX_SONG + "|" + data["name"] + "|" + artstring + "\n"
 			outstring = remove_non_ascii(outstring)
 			ser.write(outstring)
