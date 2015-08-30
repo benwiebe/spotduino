@@ -7,8 +7,8 @@
 
 ST7565 glcd(9, 8, 7, 6, 5);
 
-String _song, _artist = "";
-int spos, apos = 0;
+String _song, _artist, _album = "";
+int spos, apos, arpos = 0;
 unsigned long lastmillis;
 
 void setup()   {                
@@ -37,7 +37,8 @@ void loop()
   String msgType = Serial.readStringUntil('|');
   if(msgType == "S"){
     _song = "Song: " + Serial.readStringUntil('|');
-    _artist = "Artist: " + Serial.readStringUntil('\n');
+    _artist = "Artist: " + Serial.readStringUntil('|');
+    _album = "Album: " + Serial.readStringUntil('\n');
     spos = 0;
     apos = 0;
   }else if(msgType == "P"){
@@ -57,11 +58,13 @@ void loop()
   glcd.display();
   spos = scrollDisplay(0, _song, 0);
   apos = scrollDisplay(2, _artist, 0);
+  arpos = scrollDisplay(4, _album, 0);
   lastmillis = millis();
  }
  if(lastmillis + SCROLL_SPEED <= millis()){
    spos = scrollDisplay(0, _song, spos);
    apos = scrollDisplay(2, _artist, apos);
+   arpos = scrollDisplay(4, _album, arpos);
    lastmillis = millis();
  }
 }

@@ -52,7 +52,7 @@ while True:
 			print("\n")
 
 			artstring = artstring[:-2]
-			outstring = PREFIX_SONG + "|" + data["name"] + "|" + artstring + "\n"
+			outstring = PREFIX_SONG + "|" + data["name"] + "|" + artstring + "|" + data["album"]["name"] + "\n"
 			outstring = remove_non_ascii(outstring)
 			ser.write(outstring)
 			print("Sent '" + outstring + "' to Arduino!\n")
