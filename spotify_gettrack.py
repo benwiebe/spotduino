@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import serial
+import time
 import re
 import urllib, urllib2
 
@@ -57,6 +58,7 @@ def spotify_refresh_access_token(token):
 		return
 	global api_access_token
 	api_access_token = json.load(resp)
+	api_access_token['timestamp'] = time.time()
 	#only save a new refresh key if we were given one
 	if 'refresh_token' in api_access_token.keys():
 		spotify_save_refresh_token(api_access_token['refresh_token'])
@@ -77,9 +79,15 @@ def spotify_get_access_token(auth):
 		return
 	global api_access_token
 	api_access_token = json.load(resp)
+	api_access_token['timestamp'] = time.time()
 	spotify_save_refresh_token(api_access_token['refresh_token'])
 
+def spotify_check_token_expiry():
+	if api_access_token['timestamp'] + api_access_token['expires_in'] <= time.time():
+		spotify_refresh_access_token(api_access_token['refresh_token'])
+
 def spotify_get_saved(trackid):
+	spotify_check_token_expiry()
 	req = urllib2.Request("https://api.spotify.com/v1/me/tracks/contains?ids="+trackid, headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
 	return json.load(urllib2.urlopen(req))[0]
 
