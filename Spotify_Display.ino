@@ -7,9 +7,8 @@
 
 ST7565 glcd(9, 8, 7, 6, 5);
 
-String _song, _artist, _album = "";
-int _saved = 0;
-int spos, apos, arpos = 0;
+String _song, _artist, _album, _meta = "";
+int spos, apos, alpos, mpos = 0;
 unsigned long lastmillis;
 
 void setup()   {                
@@ -40,13 +39,14 @@ void loop()
     _song = "Song: " + Serial.readStringUntil('|');
     _artist = "Artist: " + Serial.readStringUntil('|');
     _album = "Album: " + Serial.readStringUntil('\n');
-
+    _meta = "";
     glcd.clear();
     glcd.display();
-    spos = scrollDisplay(0, _song, 0);
-    apos = scrollDisplay(2, _artist, 0);
-    arpos = scrollDisplay(4, _album, 0);
-    lastmillis = millis();
+    spos = 0;
+    apos = 0;
+    alpos = 0;
+    mpos = 0;
+    
   }else if(msgType == "P"){
     int playing = Serial.parseInt();
     if(playing == 1){
@@ -60,19 +60,25 @@ void loop()
     }
     Serial.read(); //remove newline from buffer
   }else if(msgType == "M"){
-    _saved = Serial.parseInt();
+    int saved = Serial.parseInt();
+    Serial.read(); //remove deliminator
+    int liked = Serial.parseInt();
     Serial.read(); //remove newline from buffer
+    _meta = "";
+    if(saved == 1){
+     _meta += "Saved ";
+    }
+    if(liked == 1){
+     _meta += "Liked ";
+    }
+    mpos = 0;
   }
  }
  if(lastmillis + SCROLL_SPEED <= millis()){
    spos = scrollDisplay(0, _song, spos);
    apos = scrollDisplay(2, _artist, apos);
-   arpos = scrollDisplay(4, _album, arpos);
-   if(_saved == 0){
-    glcd.drawstring(0, 7, "Not Saved");
-   }else{
-    glcd.drawstring(0, 7, "Saved    ");
-   }
+   alpos = scrollDisplay(4, _album, alpos);
+   mpos = scrollDisplay(6, _meta, mpos);
    lastmillis = millis();
  }
 }

@@ -86,10 +86,48 @@ def spotify_check_token_expiry():
 	if api_access_token['timestamp'] + api_access_token['expires_in'] <= time.time():
 		spotify_refresh_access_token(api_access_token['refresh_token'])
 
+def spotify_get_user_id():
+	spotify_check_token_expiry()
+	req = urllib2.Request("https://api.spotify.com/v1/me", headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
+	return json.load(urllib2.urlopen(req))['id']
+
 def spotify_get_saved(trackid):
 	spotify_check_token_expiry()
 	req = urllib2.Request("https://api.spotify.com/v1/me/tracks/contains?ids="+trackid, headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
 	return json.load(urllib2.urlopen(req))[0]
+
+def spotify_get_playlists(user, limit, offset):
+	spotify_check_token_expiry()
+	req = urllib2.Request("https://api.spotify.com/v1/users/" + user + "/playlists?limit=" + str(limit) + "&offset=" + str(offset), headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
+	return json.load(urllib2.urlopen(req))
+
+def spotify_get_liked(trackid):
+	spotify_check_token_expiry()
+	listid = ""
+	offset = 0
+	user = spotify_get_user_id()
+	#for as long as we don't have a playlist id
+	while listid == "":
+		#get 50 lists at position offset from the current user
+		obj = spotify_get_playlists(user, 50, offset)
+		#check each list for the name to be 'Liked from Radio'
+		for list in obj['items']:
+			if list['name'] == "Liked from Radio":
+				listid = list['id']
+				break
+		#check if there are no more lists left, if so return false (couldn't find a liked list)
+		if obj['total'] - obj['offset'] <= 50:
+			return False
+
+	#get all the tracks in the playlist
+	req = urllib2.Request("https://api.spotify.com/v1/users/" + user + "/playlists/" + listid + "/tracks?fields=items.track.id", headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
+	obj = json.load(urllib2.urlopen(req))
+	#go through the track ids and check for ours
+	for track in obj['items']:
+		if track['track']['id'] == trackid:
+			return True
+
+	return False
 
 #begin main program
 
@@ -135,12 +173,19 @@ while True:
 			print("Sent '" + outstring + "' to Arduino!\n")
 
 			if(API_ENABLED):
-				if(spotify_get_saved(trackid)):
-					outstring = PREFIX_META + "|1\n"
+				outstring = PREFIX_META + "|"
+				if spotify_get_saved(trackid):
+					outstring += "1|"
 				else:
-					outstring = PREFIX_META + "|0\n"
+					outstring += "0|"
+
+				if spotify_get_liked(trackid):
+					outstring += "1\n"
+				else:
+					outstring += "0\n"
 				ser.write(outstring)
 				print("Sent '" + outstring + "' to Arduino!\n")
+
 
 		elif "spirc_manager.cpp:1883" in line:
 			s1883 = True;
