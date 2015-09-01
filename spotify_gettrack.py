@@ -18,10 +18,13 @@ API_CLIENT_ID = "YOUR_CLIENT_ID"
 API_CLIENT_SECRET = "YOUR_CLIENT_SECRET"
 API_REDIRECT_URI = "YOUR_CALLBACK_URI"
 
+
 #global vars
 s1883 = False
 schange = False
 playing = 0
+
+curuser = None
 
 #functions
 # from http://stackoverflow.com/a/20078869/1896516
@@ -62,6 +65,8 @@ def spotify_refresh_access_token(token):
 	#only save a new refresh key if we were given one
 	if 'refresh_token' in api_access_token.keys():
 		spotify_save_refresh_token(api_access_token['refresh_token'])
+	else:
+		api_access_token['refresh_token'] = token
 
 def spotify_get_access_token(auth):
 	url = "https://accounts.spotify.com/api/token"
@@ -102,14 +107,16 @@ def spotify_get_playlists(user, limit, offset):
 	return json.load(urllib2.urlopen(req))
 
 def spotify_get_liked(trackid):
+	global curuser
 	spotify_check_token_expiry()
 	listid = ""
 	offset = 0
-	user = spotify_get_user_id()
+	if curuser == None:
+		curuser = spotify_get_user_id()
 	#for as long as we don't have a playlist id
 	while listid == "":
 		#get 50 lists at position offset from the current user
-		obj = spotify_get_playlists(user, 50, offset)
+		obj = spotify_get_playlists(curuser, 50, offset)
 		#check each list for the name to be 'Liked from Radio'
 		for list in obj['items']:
 			if list['name'] == "Liked from Radio":
@@ -120,7 +127,7 @@ def spotify_get_liked(trackid):
 			return False
 
 	#get all the tracks in the playlist
-	req = urllib2.Request("https://api.spotify.com/v1/users/" + user + "/playlists/" + listid + "/tracks?fields=items.track.id", headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
+	req = urllib2.Request("https://api.spotify.com/v1/users/" + curuser + "/playlists/" + listid + "/tracks?fields=items.track.id", headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
 	obj = json.load(urllib2.urlopen(req))
 	#go through the track ids and check for ours
 	for track in obj['items']:
@@ -139,6 +146,8 @@ if(API_ENABLED):
 	if not spotify_load_refresh_token():
 		auth = raw_input("Enter your auth token: ")
 		spotify_get_access_token(auth)
+	global curuser
+	curuser = spotify_get_user_id()
 
 while True:
 	line = proc.stdout.readline()
