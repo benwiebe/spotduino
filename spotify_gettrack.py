@@ -1,9 +1,11 @@
 #imports
+import base64
 import json
-import urllib2, urllib
+import os
 import subprocess
 import serial
 import re
+import urllib, urllib2
 
 #constants
 PREFIX_SONG = "S"
@@ -14,7 +16,6 @@ API_ENABLED = True
 API_CLIENT_ID = "YOUR_CLIENT_ID"
 API_CLIENT_SECRET = "YOUR_CLIENT_SECRET"
 API_REDIRECT_URI = "YOUR_CALLBACK_URI"
-API_AUTH_TOKEN = "YOUR_AUTH_TOKEN"
 
 #global vars
 s1883 = False
@@ -26,34 +27,57 @@ playing = 0
 def remove_non_ascii(text):
 	return ''.join([i if ord(i) < 128 else '\x0E' for i in text])
 
-def spotify_refresh_access_token():
+def spotify_load_refresh_token():
+	if os.path.isfile("token.dat"):
+		with open("token.dat", "r") as tf:
+			token = tf.read()
+			spotify_refresh_access_token(token)
+			return True
+
+	else: return False
+
+
+def spotify_save_refresh_token(token):
+	with open("token.dat", "w") as tf:
+		tf.write(token)
+
+def spotify_refresh_access_token(token):
 	global api_access_token
 	url = "https://accounts.spotify.com/api/token"
 	data = urllib.urlencode({
 			'grant_type':'refresh_token',
-			'refresh_token':api_access_token['refresh_token'],
-			'client_id':API_CLIENT_ID,
-			'client_secret':API_CLIENT_SECRET
+			'refresh_token':token
 		})
-	api_access_token = json.load(urllib2.urlopen(url=url, data=data))
-
-def spotify_get_access_token():
-	url = "https://accounts.spotify.com/api/token"
-	data = urllib.urlencode({
-			'grant_type':'authorization_code',
-			'code':API_AUTH_TOKEN,
-			'redirect_uri': API_REDIRECT_URI,
-			'client_id':API_CLIENT_ID,
-			'client_secret':API_CLIENT_SECRET
-		})
+	req = urllib2.Request(url, data=data, headers={'Authorization':'Basic ' + base64.b64encode(API_CLIENT_ID + ":" + API_CLIENT_SECRET)})
 	try:
-		resp = urllib2.urlopen(url=url, data=data)
+		resp = urllib2.urlopen(req)
 	except urllib2.HTTPError, err:
 		print(err.code)
 		print(err.read())
 		return
 	global api_access_token
 	api_access_token = json.load(resp)
+	#only save a new refresh key if we were given one
+	if 'refresh_token' in api_access_token.keys():
+		spotify_save_refresh_token(api_access_token['refresh_token'])
+
+def spotify_get_access_token(auth):
+	url = "https://accounts.spotify.com/api/token"
+	data = urllib.urlencode({
+			'grant_type':'authorization_code',
+			'code':auth,
+			'redirect_uri': API_REDIRECT_URI
+		})
+	req = urllib2.Request(url, data=data, headers={'Authorization':'Basic ' + base64.b64encode(API_CLIENT_ID + ":" + API_CLIENT_SECRET)})
+	try:
+		resp = urllib2.urlopen(req)
+	except urllib2.HTTPError, err:
+		print(err.code)
+		print(err.read())
+		return
+	global api_access_token
+	api_access_token = json.load(resp)
+	spotify_save_refresh_token(api_access_token['refresh_token'])
 
 def spotify_get_saved(trackid):
 	req = urllib2.Request("https://api.spotify.com/v1/me/tracks/contains?ids="+trackid, headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
@@ -66,7 +90,9 @@ ser = serial.Serial('/dev/ttyACM0', 9600)
 proc = subprocess.Popen(['spotify'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
 
 if(API_ENABLED):
-	spotify_get_access_token()
+	if not spotify_load_refresh_token():
+		auth = raw_input("Enter your auth token: ")
+		spotify_get_access_token(auth)
 
 while True:
 	line = proc.stdout.readline()
