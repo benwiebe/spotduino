@@ -8,3 +8,10 @@ Usage:
 - Update the Python script with the correct serial port for your Arduino.
 - Run the Python script. The ST7565 should show the default logo and set the backlight to blue. When you play a song through the client,
   the ST7565 will show the currently playing song, its artist, and playing state (reflected by green/red backlight color. RGB displays only.)
+
+  Dependencies:
+  - Adafruit ST7565 library: https://github.com/adafruit/ST7565-LCD
+    NOTE: as per http://forums.adafruit.com/viewtopic.php?f=19&t=21376, you may need to change ST7565.cpp. Around line 188, change 
+    `updateBoundingBox(x, line*8, x+5, line*8 + 8);`
+    to
+    `updateBoundingBox(x-5, line*8, x, line*8 + 8);`

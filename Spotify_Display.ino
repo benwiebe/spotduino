@@ -8,6 +8,7 @@
 ST7565 glcd(9, 8, 7, 6, 5);
 
 String _song, _artist, _album = "";
+int _saved = 0;
 int spos, apos, arpos = 0;
 unsigned long lastmillis;
 
@@ -57,13 +58,21 @@ void loop()
       digitalWrite(R_PIN, LOW);
       digitalWrite(B_PIN, HIGH);
     }
-    while(Serial.available()) Serial.read();
+    Serial.read(); //remove newline from buffer
+  }else if(msgType == "M"){
+    _saved = Serial.parseInt();
+    Serial.read(); //remove newline from buffer
   }
  }
  if(lastmillis + SCROLL_SPEED <= millis()){
    spos = scrollDisplay(0, _song, spos);
    apos = scrollDisplay(2, _artist, apos);
    arpos = scrollDisplay(4, _album, arpos);
+   if(_saved == 0){
+    glcd.drawstring(0, 7, "Not Saved");
+   }else{
+    glcd.drawstring(0, 7, "Saved    ");
+   }
    lastmillis = millis();
  }
 }
@@ -74,7 +83,7 @@ int scrollDisplay(uint8_t line, String s, int pos){
   s.toCharArray(c, 128);
 
   int written = 0;
-  int i = pos-1;
+  int i = pos;
   while (c[i] != 0) {
     glcd.drawchar(x, line, c[i]);
     i++;
