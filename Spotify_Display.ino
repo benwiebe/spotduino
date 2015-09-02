@@ -1,8 +1,10 @@
 #include "ST7565.h"
 
+//these pins were selected so that they could be PWM-ed
 #define R_PIN 3
 #define G_PIN 10
 #define B_PIN 11
+
 #define SCROLL_SPEED 2500
 
 ST7565 glcd(9, 8, 7, 6, 5);
@@ -60,6 +62,14 @@ void loop()
      _meta += "Liked ";
     }
     mpos = 0;
+  }else if(msgType == "C"){
+    int r = Serial.parseInt(); //red
+    Serial.read(); //remove deliminator
+    int g = Serial.parseInt(); //green
+    Serial.read(); //remove deliminator
+    int b = Serial.parseInt(); //blue
+    Serial.read(); //remove newline from buffer
+    setBacklightColor(r, g, b);
   }else{
     //if we have an unrecognized command, clean it up as best we can
     Serial.readStringUntil('\n');
@@ -99,6 +109,11 @@ int scrollDisplay(uint8_t line, String s, int pos, bool disp){
   return 0; //start at beginning next time
 }
 
+void setBacklightColor(int r, int g, int b){
+  analogWrite(R_PIN, r);
+  analogWrite(G_PIN, g);
+  analogWrite(B_PIN, b);
+}
 
 // this handy function will return the number of bytes currently free in RAM, great for debugging!   
 int freeRam(void)

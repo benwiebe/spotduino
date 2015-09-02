@@ -1,5 +1,6 @@
 #imports
 import base64
+import hashlib
 import json
 import os
 import subprocess
@@ -11,6 +12,7 @@ import urllib, urllib2
 #constants
 PREFIX_SONG = "S"
 PREFIX_META = "M"
+PREFIX_COLOR = "C"
 
 API_ENABLED = True
 API_CLIENT_ID = "YOUR_CLIENT_ID"
@@ -178,6 +180,7 @@ while True:
 			ser.write(outstring)
 			print("Sent '" + outstring + "' to Arduino!\n")
 
+			#get saved/liked state if API_ENABLED
 			if(API_ENABLED):
 				outstring = PREFIX_META + "|"
 				if spotify_get_saved(trackid):
@@ -191,3 +194,13 @@ while True:
 					outstring += "0\n"
 				ser.write(outstring)
 				print("Sent '" + outstring + "' to Arduino!\n")
+
+			#set display color to the hash of the trackid (experimental)
+			h = hashlib.md5(trackid).hexdigest()
+			r = int(h[:2], 16)
+			g = int(h[:4][-2:], 16)
+			b = int(h[:6][-2:], 16)
+
+			outstring = PREFIX_COLOR + "|" + str(r) + "|" + str(g) + "|" + str(b) + "\n"
+			ser.write(outstring)
+			print("Sent '" + outstring + "' to Arduino!\n")
