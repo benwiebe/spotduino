@@ -10,7 +10,6 @@ import urllib, urllib2
 
 #constants
 PREFIX_SONG = "S"
-PREFIX_PLAYING = "P"
 PREFIX_META = "M"
 
 API_ENABLED = True
@@ -19,10 +18,6 @@ API_CLIENT_SECRET = "YOUR_CLIENT_SECRET"
 API_REDIRECT_URI = "YOUR_CALLBACK_URI"
 
 #global vars
-s1883 = False
-schange = False
-playing = 0
-
 curuser = None
 lastsong = ""
 likedradioid = ""
@@ -163,7 +158,6 @@ while True:
 
 			if trackid == lastsong: continue
 			lastsong = trackid
-			schange = True
 
 			spurl="https://api.spotify.com/v1/tracks/" + trackid
 			data = json.load(urllib2.urlopen(spurl))
@@ -197,26 +191,3 @@ while True:
 					outstring += "0\n"
 				ser.write(outstring)
 				print("Sent '" + outstring + "' to Arduino!\n")
-
-
-		elif "spirc_manager.cpp:1883" in line:
-			s1883 = True;
-
-		elif "spirc_manager.cpp:668" in line:
-			if s1883:
-				if playing: schange = False
-				playing = 1
-				s1883 = False
-			else:
-				if not schange:
-					playing = 0
-
-				schange = False
-
-			print("Playing: ")
-			print(playing)
-			print("\n")
-
-			outstring = PREFIX_PLAYING + "|" + str(playing) + "\n"
-			ser.write(outstring)
-			print("Sent '" + outstring + "' to Arduino!\n")

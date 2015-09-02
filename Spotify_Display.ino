@@ -47,18 +47,6 @@ void loop()
     alpos = 0;
     mpos = 0;
     
-  }else if(msgType == "P"){
-    int playing = Serial.parseInt();
-    if(playing == 1){
-      digitalWrite(G_PIN, LOW);
-      digitalWrite(R_PIN, HIGH);
-      digitalWrite(B_PIN, HIGH);
-    }else{
-      digitalWrite(G_PIN, HIGH);
-      digitalWrite(R_PIN, LOW);
-      digitalWrite(B_PIN, HIGH);
-    }
-    Serial.read(); //remove newline from buffer
   }else if(msgType == "M"){
     int saved = Serial.parseInt();
     Serial.read(); //remove deliminator
@@ -72,6 +60,9 @@ void loop()
      _meta += "Liked ";
     }
     mpos = 0;
+  }else{
+    //if we have an unrecognized command, clean it up as best we can
+    Serial.readStringUntil('\n');
   }
  }
  if(lastmillis + SCROLL_SPEED <= millis()){
