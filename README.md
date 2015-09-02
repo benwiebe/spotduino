@@ -25,4 +25,4 @@ Dependencies:
 
   `updateBoundingBox(x-5, line*8, x, line*8 + 8);`
 
--PySerial: install using `pip install pyserial` or from http://pyserial.sourceforge.net/
+- PySerial: install using `pip install pyserial` or from http://pyserial.sourceforge.net/

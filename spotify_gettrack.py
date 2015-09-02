@@ -18,13 +18,14 @@ API_CLIENT_ID = "YOUR_CLIENT_ID"
 API_CLIENT_SECRET = "YOUR_CLIENT_SECRET"
 API_REDIRECT_URI = "YOUR_CALLBACK_URI"
 
-
 #global vars
 s1883 = False
 schange = False
 playing = 0
 
 curuser = None
+lastsong = ""
+likedradioid = ""
 
 #functions
 # from http://stackoverflow.com/a/20078869/1896516
@@ -107,27 +108,26 @@ def spotify_get_playlists(user, limit, offset):
 	return json.load(urllib2.urlopen(req))
 
 def spotify_get_liked(trackid):
-	global curuser
+	global curuser, likedradioid
 	spotify_check_token_expiry()
-	listid = ""
 	offset = 0
 	if curuser == None:
 		curuser = spotify_get_user_id()
 	#for as long as we don't have a playlist id
-	while listid == "":
+	while likedradioid == "":
 		#get 50 lists at position offset from the current user
 		obj = spotify_get_playlists(curuser, 50, offset)
 		#check each list for the name to be 'Liked from Radio'
 		for list in obj['items']:
 			if list['name'] == "Liked from Radio":
-				listid = list['id']
+				likedradioid = list['id']
 				break
 		#check if there are no more lists left, if so return false (couldn't find a liked list)
 		if obj['total'] - obj['offset'] <= 50:
 			return False
 
 	#get all the tracks in the playlist
-	req = urllib2.Request("https://api.spotify.com/v1/users/" + curuser + "/playlists/" + listid + "/tracks?fields=items.track.id", headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
+	req = urllib2.Request("https://api.spotify.com/v1/users/" + curuser + "/playlists/" + likedradioid + "/tracks?fields=items.track.id", headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
 	obj = json.load(urllib2.urlopen(req))
 	#go through the track ids and check for ours
 	for track in obj['items']:
@@ -155,12 +155,15 @@ while True:
 	if line != '':
 		#check if there's a track id in here
 		if "track=spotify:track:" in line: 
-			schange = True
 
 			before, after = line.split("track=spotify:track:");
 			trackid, end = after.split(",", 1);
 
 			print("trackid: " + trackid + "\n");
+
+			if trackid == lastsong: continue
+			lastsong = trackid
+			schange = True
 
 			spurl="https://api.spotify.com/v1/tracks/" + trackid
 			data = json.load(urllib2.urlopen(spurl))
