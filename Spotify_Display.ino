@@ -75,28 +75,28 @@ void loop()
   }
  }
  if(lastmillis + SCROLL_SPEED <= millis()){
-   spos = scrollDisplay(0, _song, spos);
-   apos = scrollDisplay(2, _artist, apos);
-   alpos = scrollDisplay(4, _album, alpos);
-   mpos = scrollDisplay(6, _meta, mpos);
+   spos = scrollDisplay(0, _song, spos, false);
+   apos = scrollDisplay(2, _artist, apos, false);
+   alpos = scrollDisplay(4, _album, alpos, false);
+   mpos = scrollDisplay(6, _meta, mpos, true);
    lastmillis = millis();
  }
 }
 
-int scrollDisplay(uint8_t line, String s, int pos){
+int scrollDisplay(uint8_t line, String s, int pos, bool disp){
   int x = 0;
   char c[128];
   s.toCharArray(c, 128);
 
   int written = 0;
   int i = pos;
-  while (c[i] != 0) {
+  while (c[i] != '\0') {
     glcd.drawchar(x, line, c[i]);
     i++;
     x += 6; // 6 pixels wide
-    if (x + 6 >= LCDWIDTH) {
-      glcd.display();
-      return written+pos; //ran out of space, characters left
+    if (x + 6 >= LCDWIDTH && c[i] != '\0') {
+      if(disp) glcd.display();
+      return written+pos+1; //ran out of space, position to start at next time
     }
     written++;
   }
@@ -104,8 +104,8 @@ int scrollDisplay(uint8_t line, String s, int pos){
     glcd.drawchar(x, line, ' ');
     x+= 6;
   }
-  glcd.display();
-  return 0;
+  if(disp) glcd.display();
+  return 0; //start at beginning next time
 }
 
 
