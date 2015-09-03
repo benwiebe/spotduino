@@ -224,9 +224,24 @@ while True:
 
 			#set display color to the hash of the trackid (experimental)
 			h = hashlib.md5(trackid).hexdigest()
-			r = 255-int(h[:2], 16)
-			g = 255-int(h[:4][-2:], 16)
-			b = 255-int(h[:6][-2:], 16)
+
+			#wheel code adapted from the Wheel function in the Adafruit NeoPixel library
+			#(https://github.com/adafruit/Adafruit_NeoPixel/blob/master/examples/strandtest/strandtest.ino)
+			wp = int(h[:2], 16)
+			if wp < 85 :
+				r = 255-wp*3
+				g = 0
+				b = wp*3
+			elif wp < 170:
+				wp -= 85;
+				r = 0
+				g = wp*3
+				b = 255-wp*3
+			else:
+				wp -= 170;
+				r = wp*3
+				g = 255-wp*3
+				b = 0
 
 			#format and send color data
 			outstring = PREFIX_COLOR + "|" + str(r) + "|" + str(g) + "|" + str(b) + "\n"
