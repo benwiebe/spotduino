@@ -9,26 +9,34 @@ import time
 import re
 import urllib, urllib2
 
-#constants
+##constants
 PREFIX_SONG = "S"
 PREFIX_META = "M"
 PREFIX_COLOR = "C"
 
+ARDUINO_SERIAL_PORT = '/dev/ttyACM0'
+
+#Spotify API settings. Set API_ENABLED to False if you don't want to login to the APIs to load song save/liked state.
+#Otherwise, create an app on the Spotify Developer website and input your credentials here. You will also need an
+#auth key. See README.md for more info
 API_ENABLED = True
 API_CLIENT_ID = "YOUR_CLIENT_ID"
 API_CLIENT_SECRET = "YOUR_CLIENT_SECRET"
 API_REDIRECT_URI = "YOUR_CALLBACK_URI"
 
-#global vars
+##global vars
 curuser = None
 lastsong = ""
 likedradioid = ""
 
-#functions
-# from http://stackoverflow.com/a/20078869/1896516
+##functions
+
+#This function removes non-ascii characters and replaces them with one that the display can represent
+#(from http://stackoverflow.com/a/20078869/1896516)
 def remove_non_ascii(text):
 	return ''.join([i if ord(i) < 128 else '\x0E' for i in text])
 
+#read the refresh token from the data file
 def spotify_load_refresh_token():
 	if os.path.isfile("token.dat"):
 		with open("token.dat", "r") as tf:
@@ -39,10 +47,12 @@ def spotify_load_refresh_token():
 	else: return False
 
 
+#save the refresh token to the data file
 def spotify_save_refresh_token(token):
 	with open("token.dat", "w") as tf:
 		tf.write(token)
 
+#use the refresh token to get a new access token
 def spotify_refresh_access_token(token):
 	global api_access_token
 	url = "https://accounts.spotify.com/api/token"
@@ -66,6 +76,7 @@ def spotify_refresh_access_token(token):
 	else:
 		api_access_token['refresh_token'] = token
 
+#get the access token from an auth token (first time setup only)
 def spotify_get_access_token(auth):
 	url = "https://accounts.spotify.com/api/token"
 	data = urllib.urlencode({
@@ -85,25 +96,30 @@ def spotify_get_access_token(auth):
 	api_access_token['timestamp'] = time.time()
 	spotify_save_refresh_token(api_access_token['refresh_token'])
 
+#check if the token has expired, if so refresh it
 def spotify_check_token_expiry():
 	if api_access_token['timestamp'] + api_access_token['expires_in'] <= time.time():
 		spotify_refresh_access_token(api_access_token['refresh_token'])
 
+#get the current user's id
 def spotify_get_user_id():
 	spotify_check_token_expiry()
 	req = urllib2.Request("https://api.spotify.com/v1/me", headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
 	return json.load(urllib2.urlopen(req))['id']
 
+#check if the track with id `trackid` is in the user's library
 def spotify_get_saved(trackid):
 	spotify_check_token_expiry()
 	req = urllib2.Request("https://api.spotify.com/v1/me/tracks/contains?ids="+trackid, headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
 	return json.load(urllib2.urlopen(req))[0]
 
+#load the playlists for a user
 def spotify_get_playlists(user, limit, offset):
 	spotify_check_token_expiry()
 	req = urllib2.Request("https://api.spotify.com/v1/users/" + user + "/playlists?limit=" + str(limit) + "&offset=" + str(offset), headers={'Accept':'application/json', 'Authorization': 'Bearer '+api_access_token['access_token']})
 	return json.load(urllib2.urlopen(req))
 
+#check if the track with id `trackid` is in the user's "Liked from Radio" playlist
 def spotify_get_liked(trackid):
 	global curuser, likedradioid
 	spotify_check_token_expiry()
@@ -133,12 +149,16 @@ def spotify_get_liked(trackid):
 
 	return False
 
-#begin main program
+##begin main program
 
-ser = serial.Serial('/dev/ttyACM0', 9600)
+#open arduino serial port
+ser = serial.Serial(ARDUINO_SERIAL_PORT, 9600)
 
+#open spotify, piping stderr to stdout, and stdout to the subproccess pipe so we can read it
+#(this is dirty, but it is the only way that seemed to work as expected)
 proc = subprocess.Popen(['spotify'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
 
+#if the api is enabled, load the refresh token. if that fails, prompt for the user's auth token and get access token. either way, load the current user afterwords
 if(API_ENABLED):
 	if not spotify_load_refresh_token():
 		auth = raw_input("Enter your auth token: ")
@@ -146,35 +166,42 @@ if(API_ENABLED):
 	global curuser
 	curuser = spotify_get_user_id()
 
+#run this forever (well, until we close the program at least)
 while True:
+	#read a line from the stdout of spotify
 	line = proc.stdout.readline()
 
+	#if the line wasn't empty, parse it
 	if line != '':
 		#check if there's a track id in here
 		if "track=spotify:track:" in line: 
 
+			#extract the trackid from the line
 			before, after = line.split("track=spotify:track:");
 			trackid, end = after.split(",", 1);
 
 			print("trackid: " + trackid + "\n");
 
+			#check if this is the same song as before. if so, ignore it because we don't need to update anything
 			if trackid == lastsong: continue
 			lastsong = trackid
 
+			#load the track information from the spotify api
 			spurl="https://api.spotify.com/v1/tracks/" + trackid
 			data = json.load(urllib2.urlopen(spurl))
 
 			print("name: " + data["name"] + "\nartist(s): ")
 
+			#format the artist information
 			artstring = ""
-
 			for artist in data["artists"]:
 				artstring += artist["name"] + ", "
 				print(artist["name"] + ",")
 
 			print("\n")
-
 			artstring = artstring[:-2]
+
+			#create, clean, and send our final song string
 			outstring = PREFIX_SONG + "|" + data["name"] + "|" + artstring + "|" + data["album"]["name"] + "\n"
 			outstring = remove_non_ascii(outstring)
 			ser.write(outstring)
@@ -197,10 +224,11 @@ while True:
 
 			#set display color to the hash of the trackid (experimental)
 			h = hashlib.md5(trackid).hexdigest()
-			r = int(h[:2], 16)
-			g = int(h[:4][-2:], 16)
-			b = int(h[:6][-2:], 16)
+			r = 255-int(h[:2], 16)
+			g = 255-int(h[:4][-2:], 16)
+			b = 255-int(h[:6][-2:], 16)
 
+			#format and send color data
 			outstring = PREFIX_COLOR + "|" + str(r) + "|" + str(g) + "|" + str(b) + "\n"
 			ser.write(outstring)
 			print("Sent '" + outstring + "' to Arduino!\n")

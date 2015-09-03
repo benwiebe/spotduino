@@ -5,10 +5,13 @@
 #define G_PIN 10
 #define B_PIN 11
 
+//how often the display text will scroll (ms)
 #define SCROLL_SPEED 2500
 
+//setup lcd
 ST7565 glcd(9, 8, 7, 6, 5);
 
+//global vars
 String _song, _artist, _album, _meta = "";
 int spos, apos, alpos, mpos = 0;
 unsigned long lastmillis;
@@ -22,6 +25,7 @@ void setup()   {
   glcd.begin(0x18);
   glcd.display();
 
+  //initialize backlight pins
   pinMode(R_PIN, OUTPUT);
   pinMode(G_PIN, OUTPUT);
   pinMode(B_PIN, OUTPUT);
@@ -35,12 +39,19 @@ void setup()   {
 
 void loop()                     
 {
+ //if there's serial data we can read
  if(Serial.available()){
+  //read until the deliminator
   String msgType = Serial.readStringUntil('|');
-  if(msgType == "S"){
+
+  //determine the type of message
+  if(msgType == "S"){ //song data
+    //read in the information
     _song = "Song: " + Serial.readStringUntil('|');
     _artist = "Artist: " + Serial.readStringUntil('|');
     _album = "Album: " + Serial.readStringUntil('\n');
+    
+    //reset vars and clear display
     _meta = "";
     glcd.clear();
     glcd.display();
@@ -49,11 +60,14 @@ void loop()
     alpos = 0;
     mpos = 0;
     
-  }else if(msgType == "M"){
+  }else if(msgType == "M"){ //meta data
+    //read in data
     int saved = Serial.parseInt();
     Serial.read(); //remove deliminator
     int liked = Serial.parseInt();
     Serial.read(); //remove newline from buffer
+    
+    //format display string
     _meta = "";
     if(saved == 1){
      _meta += "Saved ";
@@ -62,19 +76,24 @@ void loop()
      _meta += "Liked ";
     }
     mpos = 0;
-  }else if(msgType == "C"){
+  }else if(msgType == "C"){ //color data
+    //read data in
     int r = Serial.parseInt(); //red
     Serial.read(); //remove deliminator
     int g = Serial.parseInt(); //green
     Serial.read(); //remove deliminator
     int b = Serial.parseInt(); //blue
     Serial.read(); //remove newline from buffer
+
+    //set the backlight color to the new values
     setBacklightColor(r, g, b);
   }else{
     //if we have an unrecognized command, clean it up as best we can
     Serial.readStringUntil('\n');
   }
  }
+
+ //update the screen if enough time has passed (as set by SCROLL_SPEED)
  if(lastmillis + SCROLL_SPEED <= millis()){
    spos = scrollDisplay(0, _song, spos, false);
    apos = scrollDisplay(2, _artist, apos, false);
@@ -84,18 +103,21 @@ void loop()
  }
 }
 
+//scrolls a line of text. adapted from the drawstring function in the ST7565 library
 int scrollDisplay(uint8_t line, String s, int pos, bool disp){
   int x = 0;
+  //convert String to char array
   char c[128];
   s.toCharArray(c, 128);
 
+  //draw the string, based on the current position (pos)
   int written = 0;
   int i = pos;
   while (c[i] != '\0') {
     glcd.drawchar(x, line, c[i]);
     i++;
     x += 6; // 6 pixels wide
-    if (x + 6 >= LCDWIDTH && c[i] != '\0') {
+    if (x + 6 >= LCDWIDTH && c[i] != '\0') { //rand out of room, AND next character isn't a terminator
       if(disp) glcd.display();
       return written+pos+1; //ran out of space, position to start at next time
     }
@@ -109,6 +131,7 @@ int scrollDisplay(uint8_t line, String s, int pos, bool disp){
   return 0; //start at beginning next time
 }
 
+//set the PWM for the display backlight pins
 void setBacklightColor(int r, int g, int b){
   analogWrite(R_PIN, r);
   analogWrite(G_PIN, g);
