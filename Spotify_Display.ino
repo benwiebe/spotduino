@@ -25,6 +25,9 @@
 //how often the display text will scroll (ms)
 #define SCROLL_SPEED 2500
 
+//Buffer size for scrolling text. 256 seems to work on Uno, this may be different on other boards
+#define SCROLL_BUFFER_SIZE 256
+
 //setup lcd
 ST7565 glcd(9, 8, 7, 6, 5);
 
@@ -67,6 +70,18 @@ void loop()
     _song = "Song: " + Serial.readStringUntil('|');
     _artist = "Artist: " + Serial.readStringUntil('|');
     _album = "Album: " + Serial.readStringUntil('\n');
+
+    if(_song.length() >= SCROLL_BUFFER_SIZE){
+      _song = "Song: *TOO LONG*";
+    }
+
+    if(_artist.length() >= SCROLL_BUFFER_SIZE){
+      _artist = "Artist: *TOO LONG*";
+    }
+
+    if(_album.length() >= SCROLL_BUFFER_SIZE){
+      _album = "Album: *TOO LONG*";
+    }
     
     //reset vars and clear display
     _meta = "";
@@ -124,8 +139,8 @@ void loop()
 int scrollDisplay(uint8_t line, String s, int pos, bool disp){
   int x = 0;
   //convert String to char array
-  char c[128];
-  s.toCharArray(c, 128);
+  char c[SCROLL_BUFFER_SIZE];
+  s.toCharArray(c, SCROLL_BUFFER_SIZE);
 
   //draw the string, based on the current position (pos)
   int written = 0;
