@@ -61,11 +61,13 @@ void loop()
 {
  //if there's serial data we can read
  if(Serial.available()){
-  //read until the deliminator
-  String msgType = Serial.readStringUntil('|');
+  //read string type and clear buffer up to the first data position
+  //note: for some reason using just `Serial.read()` instead of `Serial.readStringUntil('|');` uses more ram. weird.
+  char msgType = Serial.read();
+  Serial.readStringUntil('|');
 
   //determine the type of message
-  if(msgType == "S"){ //song data
+  if(msgType == 'S'){ //song data
     //read in the information
     _song = "Song: " + Serial.readStringUntil('|');
     _artist = "Artist: " + Serial.readStringUntil('|');
@@ -92,7 +94,7 @@ void loop()
     alpos = 0;
     mpos = 0;
     
-  }else if(msgType == "M"){ //meta data
+  }else if(msgType == 'M'){ //meta data
     //read in data
     int saved = Serial.parseInt();
     Serial.read(); //remove deliminator
@@ -108,7 +110,7 @@ void loop()
      _meta += "Liked ";
     }
     mpos = 0;
-  }else if(msgType == "C"){ //color data
+  }else if(msgType == 'C'){ //color data
     //read data in
     int r = Serial.parseInt(); //red
     Serial.read(); //remove deliminator
@@ -143,19 +145,16 @@ int scrollDisplay(uint8_t line, String s, int pos, bool disp){
   s.toCharArray(c, SCROLL_BUFFER_SIZE);
 
   //draw the string, based on the current position (pos)
-  int written = 0;
-  int i = pos;
-  while (c[i] != '\0') {
-    glcd.drawchar(x, line, c[i]);
-    i++;
+  while (c[pos] != '\0') {
+    glcd.drawchar(x, line, c[pos]);
+    pos++;
     x += 6; // 6 pixels wide
-    if (x + 6 >= LCDWIDTH && c[i] != '\0') { //rand out of room, AND next character isn't a terminator
+    if (x + 6 >= LCDWIDTH && c[pos] != '\0') { //ran out of room, AND next character isn't a terminator
       if(disp) glcd.display();
-      return written+pos+1; //ran out of space, position to start at next time
+      return pos; //ran out of space, position to start at next time
     }
-    written++;
   }
- while(x < LCDWIDTH){
+ while(x < LCDWIDTH-6){
     glcd.drawchar(x, line, ' ');
     x+= 6;
   }
