@@ -28,6 +28,9 @@
 //Buffer size for scrolling text. 256 seems to work on Uno, this may be different on other boards
 #define SCROLL_BUFFER_SIZE 256
 
+//enable scroll arrows (showing if string overflows)
+#define SHOW_SCROLL_ARROWS true
+
 //setup lcd
 ST7565 glcd(9, 8, 7, 6, 5);
 
@@ -129,9 +132,21 @@ void loop()
 
  //update the screen if enough time has passed (as set by SCROLL_SPEED)
  if(lastmillis + SCROLL_SPEED <= millis()){
+  
+   glcd.clear();
+   
+   if(spos > 0 && SHOW_SCROLL_ARROWS) glcd.drawchar(0, 1, '\x11');
    spos = scrollDisplay(0, _song, spos, false);
+   if(spos > 0 && SHOW_SCROLL_ARROWS) glcd.drawchar(LCDWIDTH-6, 1, '\x10');
+
+   if(apos > 0 && SHOW_SCROLL_ARROWS) glcd.drawchar(0, 3, '\x11');
    apos = scrollDisplay(2, _artist, apos, false);
+   if(apos > 0 && SHOW_SCROLL_ARROWS) glcd.drawchar(LCDWIDTH-6, 3, '\x10');
+
+   if(alpos > 0 && SHOW_SCROLL_ARROWS) glcd.drawchar(0, 5, '\x11');
    alpos = scrollDisplay(4, _album, alpos, false);
+   if(alpos > 0 && SHOW_SCROLL_ARROWS) glcd.drawchar(LCDWIDTH-6, 5, '\x10');
+   
    mpos = scrollDisplay(6, _meta, mpos, true);
    lastmillis = millis();
  }
