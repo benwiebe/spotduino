@@ -169,10 +169,6 @@ int scrollDisplay(uint8_t line, String s, int pos, bool disp){
       return pos; //ran out of space, position to start at next time
     }
   }
- while(x < LCDWIDTH-6){
-    glcd.drawchar(x, line, ' ');
-    x+= 6;
-  }
   if(disp) glcd.display();
   return 0; //start at beginning next time
 }
