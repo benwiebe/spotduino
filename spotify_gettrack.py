@@ -30,6 +30,7 @@ import urllib, urllib2
 PREFIX_SONG = "S"
 PREFIX_META = "M"
 PREFIX_COLOR = "C"
+PREFIX_TIME = "T"
 
 ARDUINO_SERIAL_PORT = '/dev/ttyACM0'
 
@@ -166,6 +167,12 @@ def spotify_get_liked(trackid):
 
 	return False
 
+#send time to the arduino
+def send_time():
+	outstring = time.strftime(PREFIX_TIME + "|%H|%M|%S\n", time.localtime())
+	ser.write(outstring)
+	print("Sent '" + outstring + "' to Arduino!\n")
+
 ##begin main program
 
 #open arduino serial port
@@ -264,3 +271,5 @@ while True:
 			outstring = PREFIX_COLOR + "|" + str(r) + "|" + str(g) + "|" + str(b) + "\n"
 			ser.write(outstring)
 			print("Sent '" + outstring + "' to Arduino!\n")
+
+			send_time()

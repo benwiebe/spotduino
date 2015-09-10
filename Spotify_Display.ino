@@ -22,8 +22,8 @@
 #define G_PIN 10
 #define B_PIN 11
 
-//how often the display text will scroll (ms)
-#define SCROLL_SPEED 2500
+//how often the display text will scroll (ms). Even seconds work best (ie. multiples of 1000) if CLOCK_SHOW is true
+#define SCROLL_SPEED 3000
 
 //Buffer size for scrolling text. 256 seems to work on Uno, this may be different on other boards
 #define SCROLL_BUFFER_SIZE 256
@@ -31,13 +31,20 @@
 //enable scroll arrows (showing if string overflows)
 #define SHOW_SCROLL_ARROWS true
 
+//enable or disable clock at bottom right corner
+#define CLOCK_SHOW true
+
+//set to either 12 or 24 hour format
+#define CLOCK_FORMAT 24
+
 //setup lcd
 ST7565 glcd(9, 8, 7, 6, 5);
 
 //global vars
 String _song, _artist, _album, _meta = "";
-int spos, apos, alpos, mpos = 0;
+unsigned int spos, apos, alpos, mpos = 0;
 unsigned long lastmillis;
+uint8_t hrs, mins, secs = 0;
 
 void setup()   {                
   Serial.begin(9600);
@@ -124,6 +131,13 @@ void loop()
 
     //set the backlight color to the new values
     setBacklightColor(r, g, b);
+  }else if(msgType == 'T'){
+    hrs = Serial.parseInt(); //get hours
+    Serial.read(); //remove deliminator
+    mins = Serial.parseInt(); //get minutes
+    Serial.read(); //remove deliminator
+    secs = Serial.parseInt(); //get seconds
+    Serial.read(); //remove newline from buffer
   }else{
     //if we have an unrecognized command, clean it up as best we can
     Serial.readStringUntil('\n');
@@ -134,6 +148,13 @@ void loop()
  if(lastmillis + SCROLL_SPEED <= millis()){
   
    glcd.clear();
+
+   if(CLOCK_SHOW){
+    updateTime();
+    char buf[6];
+    ((hrs<10 ? "0" : "") + String(hrs) + ":" + (mins<10 ? "0" : "") + String(mins)).toCharArray(buf, 6);
+    glcd.drawstring(LCDWIDTH-6*sizeof(buf)+5, 7, buf);
+   }
    
    if(spos > 0 && SHOW_SCROLL_ARROWS) glcd.drawchar(0, 1, '\x11');
    spos = scrollDisplay(0, _song, spos, false);
@@ -148,6 +169,7 @@ void loop()
    if(alpos > 0 && SHOW_SCROLL_ARROWS) glcd.drawchar(LCDWIDTH-6, 5, '\x10');
    
    mpos = scrollDisplay(6, _meta, mpos, true);
+   
    lastmillis = millis();
  }
 }
@@ -178,6 +200,24 @@ void setBacklightColor(int r, int g, int b){
   analogWrite(R_PIN, r);
   analogWrite(G_PIN, g);
   analogWrite(B_PIN, b);
+}
+
+//update our time variables
+void updateTime(){
+  secs += (millis() - lastmillis)/1000;
+  if(secs >= 60){
+    secs -= 60;
+    mins ++;
+  }
+
+  if(mins >= 60){
+    mins -= 60;
+    hrs ++;
+  }
+
+  if(hrs >= CLOCK_FORMAT){
+    hrs -= CLOCK_FORMAT;
+  }
 }
 
 // this handy function will return the number of bytes currently free in RAM, great for debugging!   
