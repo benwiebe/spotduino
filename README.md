@@ -29,7 +29,8 @@
      - API_CLIENT_ID: Spotify app client ID from the developer console
      - API_CLIENT_SECRET: Spotify app secret ID from the developer console
      - API_REDIRECT: URL that displays the auth token (ie. this should be where web/spotduino_auth_redirect.php is hosted)
-  - Arduino Sketch
+
+ - Arduino Sketch
      - R_PIN, G_PIN, B_PIN: the pins that the display's red, green, and blue backlight pins are connected to (these should ideally be PWM pins)
      - SCROLL_SPEED: how often, in milliseconds, the screen is refreshed
      - SCROLL_BUFFER_SIZE: buffer size for displaying scrolling text. 256 was tested to work on an Uno, but this may be different on different boards depending on how much RAM they have
