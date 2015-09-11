@@ -25,8 +25,8 @@
 //how often the display text will scroll (ms). Even seconds work best (ie. multiples of 1000) if CLOCK_SHOW is true
 #define SCROLL_SPEED 3000
 
-//Buffer size for scrolling text. 256 seems to work on Uno, this may be different on other boards
-#define SCROLL_BUFFER_SIZE 256
+//Buffer size for scrolling text. 256 seems to work on Uno, but only if CLOCK_SHOW is false; if it's true, try 192. This may be different on other boards
+#define STRING_BUFFER_SIZE 192
 
 //enable scroll arrows (showing if string overflows)
 #define SHOW_SCROLL_ARROWS true
@@ -63,6 +63,10 @@ void setup()   {
   digitalWrite(R_PIN, HIGH);
   digitalWrite(G_PIN, HIGH);
   digitalWrite(B_PIN, LOW);
+
+  _song.reserve(STRING_BUFFER_SIZE);
+  _artist.reserve(STRING_BUFFER_SIZE);
+  _album.reserve(STRING_BUFFER_SIZE);
   
 }
 
@@ -79,20 +83,20 @@ void loop()
   //determine the type of message
   if(msgType == 'S'){ //song data
     //read in the information
-    _song = "Song: " + Serial.readStringUntil('|');
-    _artist = "Artist: " + Serial.readStringUntil('|');
-    _album = "Album: " + Serial.readStringUntil('\n');
+    _song = String(F("Song: ")) + Serial.readStringUntil('|');
+    _artist = String(F("Artist: ")) + Serial.readStringUntil('|');
+    _album = String(F("Album: ")) + Serial.readStringUntil('\n');
 
-    if(_song.length() >= SCROLL_BUFFER_SIZE){
-      _song = "Song: *TOO LONG*";
+    if(_song.length() >= STRING_BUFFER_SIZE){
+      _song = F("Song: *TOO LONG*");
     }
 
-    if(_artist.length() >= SCROLL_BUFFER_SIZE){
-      _artist = "Artist: *TOO LONG*";
+    if(_artist.length() >= STRING_BUFFER_SIZE){
+      _artist = F("Artist: *TOO LONG*");
     }
 
-    if(_album.length() >= SCROLL_BUFFER_SIZE){
-      _album = "Album: *TOO LONG*";
+    if(_album.length() >= STRING_BUFFER_SIZE){
+      _album = F("Album: *TOO LONG*");
     }
     
     //reset vars and clear display
@@ -114,10 +118,10 @@ void loop()
     //format display string
     _meta = "";
     if(saved == 1){
-     _meta += "Saved ";
+     _meta += F("Saved ");
     }
     if(liked == 1){
-     _meta += "Liked ";
+     _meta += F("Liked ");
     }
     mpos = 0;
   }else if(msgType == 'C'){ //color data
@@ -152,7 +156,7 @@ void loop()
    if(CLOCK_SHOW){
     updateTime();
     char buf[6];
-    ((hrs<10 ? "0" : "") + String(hrs) + ":" + (mins<10 ? "0" : "") + String(mins)).toCharArray(buf, 6);
+    ((hrs<10 ? String(F("0")) : String(F(""))) + String(hrs) + String(F(":")) + (mins<10 ? String(F("0")) : String(F(""))) + String(mins)).toCharArray(buf, 6);
     glcd.drawstring(LCDWIDTH-6*sizeof(buf)+5, 7, buf);
    }
    
@@ -178,8 +182,8 @@ void loop()
 int scrollDisplay(uint8_t line, String s, int pos, bool disp){
   int x = 0;
   //convert String to char array
-  char c[SCROLL_BUFFER_SIZE];
-  s.toCharArray(c, SCROLL_BUFFER_SIZE);
+  char c[STRING_BUFFER_SIZE];
+  s.toCharArray(c, STRING_BUFFER_SIZE);
 
   //draw the string, based on the current position (pos)
   while (c[pos] != '\0') {
