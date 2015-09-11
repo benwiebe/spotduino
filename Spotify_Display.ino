@@ -25,7 +25,7 @@
 //how often the display text will scroll (ms). Even seconds work best (ie. multiples of 1000) if CLOCK_SHOW is true
 #define SCROLL_SPEED 3000
 
-//Buffer size for scrolling text. 256 seems to work on Uno, but only if CLOCK_SHOW is false; if it's true, try 192. This may be different on other boards
+//Buffer size for scrolling text. 192 seems to work well on Uno, but this may be different on other boards
 #define STRING_BUFFER_SIZE 192
 
 //enable scroll arrows (showing if string overflows)
