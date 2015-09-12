@@ -25,8 +25,8 @@
 //how often the display text will scroll (ms). Even seconds work best (ie. multiples of 1000) if CLOCK_SHOW is true
 #define SCROLL_SPEED 3000
 
-//Buffer size for scrolling text. 192 seems to work well on Uno, but this may be different on other boards
-#define STRING_BUFFER_SIZE 192
+//Buffer size for scrolling text. 128 seems to work well on Uno, but this may be different on other boards
+#define STRING_BUFFER_SIZE 128
 
 //enable scroll arrows (showing if string overflows)
 #define SHOW_SCROLL_ARROWS true
@@ -49,7 +49,9 @@ uint8_t hrs, mins, secs = 0;
 void setup()   {                
   Serial.begin(9600);
 
-  Serial.print(freeRam());
+  String out = String(F("B|")) + STRING_BUFFER_SIZE + String(F("\n"));
+  
+  Serial.print(out);
 
   // initialize components
   glcd.begin(0x18);

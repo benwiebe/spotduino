@@ -46,6 +46,7 @@ API_REDIRECT_URI = "YOUR_CALLBACK_URI"
 curuser = None
 lastsong = ""
 likedradioid = ""
+arduino_bufsize = 0
 
 ##functions
 
@@ -173,10 +174,22 @@ def send_time():
 	ser.write(outstring)
 	print("Sent '" + outstring + "' to Arduino!\n")
 
+def read_serial(port):
+	data = ser.read(ser.inWaiting())
+	if '\n' in data:
+		lines = data.split('\n')
+		for line in lines:
+			if line != "":
+				if line[0] == 'B':
+					global arduino_bufsize
+					arduino_bufsize = line[2:]
+					print(arduino_bufsize)
+
+
 ##begin main program
 
 #open arduino serial port
-ser = serial.Serial(ARDUINO_SERIAL_PORT, 9600)
+ser = serial.Serial(ARDUINO_SERIAL_PORT, 9600, timeout=1)
 
 #open spotify, piping stderr to stdout, and stdout to the subproccess pipe so we can read it
 #(this is dirty, but it is the only way that seemed to work as expected)
@@ -273,3 +286,6 @@ while True:
 			print("Sent '" + outstring + "' to Arduino!\n")
 
 			send_time()
+
+	read_serial(ser)
+	

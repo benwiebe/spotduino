@@ -34,7 +34,7 @@
  - Arduino Sketch
      - R_PIN, G_PIN, B_PIN: the pins that the display's red, green, and blue backlight pins are connected to (these should ideally be PWM pins)
      - SCROLL_SPEED: how often, in milliseconds, the screen is refreshed
-     - STRING_BUFFER_SIZE: buffer size for displaying scrolling text. 192 was tested to work on an Uno, but this may be different on different boards depending on how much RAM they have
+     - STRING_BUFFER_SIZE: buffer size for displaying scrolling text. 128 was tested to work on an Uno, but this may be different on different boards depending on how much RAM they have
      - SHOW_SCROLL_ARROWS: whether or not to display scroll status indicator arrows
      - CLOCK_SHOW: set to true/false depending on if you want a clock shown in the bottom right corner of the screen
      - CLOCK_FORMAT: set to 12/24 depending on your preferred clock format (only relevant if CLOCK_SHOW is true)
