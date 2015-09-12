@@ -174,6 +174,7 @@ def send_time():
 	ser.write(outstring)
 	print("Sent '" + outstring + "' to Arduino!\n")
 
+#read serial data that was sent by the arduino
 def read_serial(port):
 	data = ser.read(ser.inWaiting())
 	if '\n' in data:
@@ -182,9 +183,8 @@ def read_serial(port):
 			if line != "":
 				if line[0] == 'B':
 					global arduino_bufsize
-					arduino_bufsize = line[2:]
+					arduino_bufsize = int(line[2:])
 					print(arduino_bufsize)
-
 
 ##begin main program
 
@@ -239,7 +239,23 @@ while True:
 			artstring = artstring[:-2]
 
 			#create, clean, and send our final song string
-			outstring = PREFIX_SONG + "|" + data["name"] + "|" + artstring + "|" + data["album"]["name"] + "\n"
+			sdata = "Song: " + data["name"]
+			ardata = "Artist: " + artstring
+			aldata = "Album: " + data["album"]["name"]
+
+			if len(sdata) >= arduino_bufsize:
+				sdata = sdata[:arduino_bufsize-2]
+				sdata += "\x0A"
+
+			if len(ardata) >= arduino_bufsize:
+				ardata = ardata[:arduino_bufsize-2]
+				ardata += "\x0A"
+
+			if len(aldata) >= arduino_bufsize:
+				aldata = aldata[:arduino_bufsize-2]
+				aldata += "\x0A"
+
+			outstring = PREFIX_SONG + "|" + sdata + "|" + ardata + "|" + aldata + "|\n"
 			outstring = remove_non_ascii(outstring)
 			ser.write(outstring)
 			print("Sent '" + outstring + "' to Arduino!\n")
@@ -256,6 +272,7 @@ while True:
 					outstring += "1\n"
 				else:
 					outstring += "0\n"
+
 				ser.write(outstring)
 				print("Sent '" + outstring + "' to Arduino!\n")
 
@@ -288,4 +305,3 @@ while True:
 			send_time()
 
 	read_serial(ser)
-	

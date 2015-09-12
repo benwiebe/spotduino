@@ -85,21 +85,10 @@ void loop()
   //determine the type of message
   if(msgType == 'S'){ //song data
     //read in the information
-    _song = String(F("Song: ")) + Serial.readStringUntil('|');
-    _artist = String(F("Artist: ")) + Serial.readStringUntil('|');
-    _album = String(F("Album: ")) + Serial.readStringUntil('\n');
-
-    if(_song.length() >= STRING_BUFFER_SIZE){
-      _song = F("Song: *TOO LONG*");
-    }
-
-    if(_artist.length() >= STRING_BUFFER_SIZE){
-      _artist = F("Artist: *TOO LONG*");
-    }
-
-    if(_album.length() >= STRING_BUFFER_SIZE){
-      _album = F("Album: *TOO LONG*");
-    }
+    _song = Serial.readStringUntil('|');
+    _artist = Serial.readStringUntil('|');
+    _album = Serial.readStringUntil('|');
+    Serial.read(); //remove newline
     
     //reset vars and clear display
     _meta = "";
