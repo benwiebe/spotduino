@@ -40,6 +40,7 @@
      - CLOCK_FORMAT: set to 12/24 depending on your preferred clock format (only relevant if CLOCK_SHOW is true)
 
 ##Dependencies:
+- Python 2 (3 may work using the 2to3 tool, but this hasn't been tested)
 - Adafruit ST7565 library: https://github.com/adafruit/ST7565-LCD
 
   NOTE: as per http://forums.adafruit.com/viewtopic.php?f=19&t=21376, you may need to change ST7565.cpp. Around line 188, change 
